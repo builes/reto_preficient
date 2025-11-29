@@ -21,7 +21,7 @@ const startApp = async () => {
     await databaseInit();
     const server = new Server(); // Aquí se levanta el servidor solo si la BD está OK
   } catch (err) {
-    console.error("❌ Error crítico al iniciar la app:", err);
+    console.error("Error crítico al iniciar la app:", err);
   }
 };
 
