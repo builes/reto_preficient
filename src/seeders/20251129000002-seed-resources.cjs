@@ -6,79 +6,58 @@ const { faker } = require('@faker-js/faker');
 module.exports = {
   async up(queryInterface, Sequelize) {
     const resources = [
-      // Oxygen Supply Tank A
+      // OXYGEN - UN SOLO REGISTRO (niveles definidos en backend)
       {
         id: 1,
         quantity: faker.number.int({ min: 15000, max: 25000 }),
-        criticalLevel: 5000,
-        maximumLevel: 25000,
-        unit: 'L',
         resourceDataId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      // Water Reservoir Main
+      // WATER - UN SOLO REGISTRO (niveles definidos en backend)
       {
         id: 2,
         quantity: faker.number.int({ min: 200, max: 500 }),
-        criticalLevel: 80,
-        maximumLevel: 500,
-        unit: 'L',
         resourceDataId: 2,
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      // Food Storage Unit 1
+      // SPARE PARTS - UN SOLO REGISTRO (niveles definidos en backend)
       {
         id: 3,
-        quantity: faker.number.int({ min: 80, max: 180 }),
-        criticalLevel: 30,
-        maximumLevel: 180,
-        unit: 'kg',
+        quantity: faker.number.int({ min: 40, max: 100 }),
         resourceDataId: 3,
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      // Life Support Spare Parts
+      // FOOD - Protein Pack Storage (niveles definidos en backend)
       {
         id: 4,
-        quantity: faker.number.int({ min: 40, max: 100 }),
-        criticalLevel: 20,
-        maximumLevel: 100,
-        unit: 'u',
+        quantity: faker.number.int({ min: 30, max: 60 }),
         resourceDataId: 4,
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      // Emergency Oxygen Reserve
+      // FOOD - Vegetable Reserves (niveles definidos en backend)
       {
         id: 5,
-        quantity: faker.number.int({ min: 8000, max: 15000 }),
-        criticalLevel: 3000,
-        maximumLevel: 15000,
-        unit: 'L',
+        quantity: faker.number.int({ min: 20, max: 50 }),
         resourceDataId: 5,
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      // Recycled Water Tank
+      // FOOD - Carbohydrate Supply (niveles definidos en backend)
       {
         id: 6,
-        quantity: faker.number.int({ min: 100, max: 300 }),
-        criticalLevel: 50,
-        maximumLevel: 300,
-        unit: 'L',
+        quantity: faker.number.int({ min: 30, max: 70 }),
         resourceDataId: 6,
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      // Protein Pack Storage
+      // FOOD - Emergency Rations (niveles definidos en backend)
       {
         id: 7,
-        quantity: faker.number.int({ min: 40, max: 100 }),
-        criticalLevel: 15,
-        maximumLevel: 100,
-        unit: 'kg',
+        quantity: faker.number.int({ min: 10, max: 30 }),
         resourceDataId: 7,
         createdAt: new Date(),
         updatedAt: new Date()

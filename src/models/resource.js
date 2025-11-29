@@ -1,3 +1,5 @@
+// Resource: Stores current quantity. Levels applied dynamically from constants.
+
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.config.js';
 
@@ -25,27 +27,6 @@ Resource.init(
       defaultValue: 0,
       validate: {
         min: 0
-      }
-    },
-    criticalLevel: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      validate: {
-        min: 0
-      }
-    },
-    maximumLevel: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      validate: {
-        min: 0
-      }
-    },
-    unit: {
-      type: DataTypes.ENUM('kg', 'L', 'u', 'p'),
-      allowNull: false,
-      validate: {
-        isIn: [['kg', 'L', 'u', 'p']]
       }
     },
     resourceDataId: {

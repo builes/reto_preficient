@@ -15,18 +15,6 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
-      criticalLevel: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      maximumLevel: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      unit: {
-        type: Sequelize.ENUM('kg', 'L', 'u', 'p'),
-        allowNull: false
-      },
       resourceDataId: {
         type: Sequelize.INTEGER,
         allowNull: false,

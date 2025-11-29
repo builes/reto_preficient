@@ -1,3 +1,5 @@
+// ChangeHistory: Tracks quantity snapshots. Auto-created every minute by cron, auto-deleted after 30 days.
+
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.config.js';
 

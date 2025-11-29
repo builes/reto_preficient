@@ -1,3 +1,5 @@
+// ResourceData: Master catalog of resource types. Levels are NOT in DB, applied dynamically from constants.
+
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.config.js';
 
