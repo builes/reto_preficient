@@ -1,7 +1,8 @@
 import cron from 'node-cron';
-import db from '../models/index.js';
-
-const { ResourceData, Resource, ChangeHistory } = db;
+import { sequelize } from '../config/database.config.js';
+import ResourceData from '../models/resources.model.js';
+import Resource from '../models/resource.js';
+import ChangeHistory from '../models/changeHistory.js';
 
 /**
  * Cron job que registra el estado actual de todos los recursos cada minuto
@@ -11,14 +12,8 @@ const { ResourceData, Resource, ChangeHistory } = db;
 export const startResourceMonitoringCron = () => {
   cron.schedule('* * * * *', async () => {
     try {
-      // Obtener todos los recursos con su información de categoría
-      const resources = await Resource.findAll({
-        include: [{
-          model: ResourceData,
-          as: 'resourceData',
-          attributes: ['id', 'name', 'category']
-        }]
-      });
+      // Obtener todos los recursos sin includes
+      const resources = await Resource.findAll();
 
       if (!resources || resources.length === 0) return;
 
@@ -31,7 +26,32 @@ export const startResourceMonitoringCron = () => {
       });
 
       await Promise.all(historyPromises);
-      console.log(`[CRON] ${resources.length} registros creados - ${new Date().toLocaleString('es-MX')}`);
+      
+      const timestamp = new Date();
+      console.log(`[CRON] ${resources.length} registros creados - ${timestamp.toLocaleString('es-MX')}`);
+      
+      // Emitir evento WebSocket a todos los clientes conectados
+      if (global.io) {
+        // Obtener ResourceData para cada recurso
+        const enrichedData = await Promise.all(resources.map(async (resource) => {
+          const resourceData = await ResourceData.findByPk(resource.resourceDataId);
+          return {
+            id: resource.id,
+            name: resourceData.name,
+            category: resourceData.category,
+            quantity: resource.quantity,
+            timestamp: timestamp.toISOString()
+          };
+        }));
+        
+        global.io.emit('resources:updated', {
+          resources: enrichedData,
+          count: enrichedData.length,
+          timestamp: timestamp.toISOString()
+        });
+        
+        console.log('[WebSocket] Datos enviados a clientes conectados');
+      }
     } catch (error) {
       console.error('[CRON] Error:', error.message);
     }
@@ -52,11 +72,12 @@ export const startHistoryCleanupCron = () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      // Eliminar registros antiguos
+      // Eliminar registros antiguos usando Op de Sequelize
+      const { Op } = await import('sequelize');
       const deleted = await ChangeHistory.destroy({
         where: {
           createdAt: {
-            [db.Sequelize.Op.lt]: thirtyDaysAgo
+            [Op.lt]: thirtyDaysAgo
           }
         }
       });

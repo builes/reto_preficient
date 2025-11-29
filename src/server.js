@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import { createServer } from "http";
+import { Server as SocketIOServer } from "socket.io";
 import { sequelize } from './config/database.config.js';
 
 import { router as resourceRoutes } from "./routes/resource.routes.js";
@@ -7,23 +9,40 @@ import { startResourceMonitoringCron, startHistoryCleanupCron } from './cron/res
 
 /**
  * Clase principal del servidor
- * Configura Express, base de datos, middlewares, rutas y cron jobs
+ * Configura Express, base de datos, middlewares, rutas, WebSockets y cron jobs
  */
 export class Server {
   constructor() {
     this.app = express();
     this.port = process.env.PORT || 3001;
+    
+    // Crear servidor HTTP
+    this.httpServer = createServer(this.app);
+    
+    // Configurar Socket.IO para tiempo real
+    this.io = new SocketIOServer(this.httpServer, {
+      cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+      }
+    });
+    
+    // Hacer io accesible globalmente para los cron jobs
+    global.io = this.io;
 
     // Definición de rutas base de la API
     this.paths = {
       resources: "/api/resources",
     };
 
-    // Inicializar componentes en orden
-    this.databaseInit();
+    // Configurar middlewares y rutas PRIMERO
     this.middlewares();
+    this.sockets();
     this.routes();
+    
+    // LUEGO iniciar servidor (listen PRIMERO, DB DESPUÉS)
     this.listen();
+    this.databaseInit();
   }
 
   /**
@@ -57,9 +76,33 @@ export class Server {
   }
 
   /**
+   * Configura eventos de WebSocket para tiempo real
+   */
+  sockets() {
+    this.io.on('connection', (socket) => {
+      console.log('[WebSocket] Cliente conectado:', socket.id);
+      
+      // Enviar estado inicial al conectarse
+      socket.emit('welcome', {
+        message: 'Conectado al sistema de monitoreo en tiempo real',
+        timestamp: new Date().toISOString()
+      });
+      
+      socket.on('disconnect', () => {
+        console.log('[WebSocket] Cliente desconectado:', socket.id);
+      });
+    });
+  }
+
+  /**
    * Registra las rutas de la aplicación
    */
   routes() {
+    // Ruta de prueba super simple
+    this.app.get('/ping', (req, res) => {
+      res.json({ message: 'pong', timestamp: new Date().toISOString() });
+    });
+    
     this.app.use(this.paths.resources, resourceRoutes);
   }
 
@@ -67,10 +110,12 @@ export class Server {
    * Configura middlewares de Express
    * - CORS: permite peticiones desde cualquier origen
    * - express.json(): parsea el body de las peticiones JSON
+   * - express.static(): sirve archivos estáticos (dashboard HTML)
    */
   middlewares() {
     this.app.use(cors());
     this.app.use(express.json());
+    this.app.use(express.static('public'));
   }
 
   /**
@@ -78,8 +123,9 @@ export class Server {
    */
   listen() {
     try {
-      this.app.listen(this.port, () => {
+      this.httpServer.listen(this.port, () => {
         console.log(`Server is running on port ${this.port}`);
+        console.log(`WebSocket server ready for real-time updates`);
       });
     } catch (error) {
       console.error(`[Server] Error starting server`, error);

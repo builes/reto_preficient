@@ -1,33 +1,37 @@
 // Business logic for resource management with dynamic level application
 
-import db from '../models/index.js';
-import { RESOURCE_LEVELS, getLevelsByCategory, isResourceCritical } from '../constants/resource.constants.js';
-
-const { ResourceData, Resource, ChangeHistory } = db;
+import { sequelize } from '../config/database.config.js';
+import ResourceData from '../models/resources.model.js';
+import Resource from '../models/resource.js';
+import { getLevelsByCategory, isResourceCritical } from '../constants/resource.constants.js';
 
 // Get all resources with dynamically applied levels from constants
 export const getAllResourcesService = async () => {
-  const resources = await Resource.findAll({
-    include: [{
-      model: ResourceData,
-      as: 'resourceData',
-      attributes: ['id', 'name', 'category']
-    }]
-  });
-
-  // Aplicar niveles estándar basados en la categoría
-  return resources.map(resource => {
-    const category = resource.resourceData.category;
+  const resources = await Resource.findAll();
+  
+  // Obtener ResourceData para cada recurso manualmente
+  const enrichedResources = await Promise.all(resources.map(async (resource) => {
+    const resourceData = await ResourceData.findByPk(resource.resourceDataId);
+    const category = resourceData.category;
     const levels = getLevelsByCategory(category);
     
     return {
-      ...resource.toJSON(),
+      id: resource.id,
+      quantity: resource.quantity,
+      resourceDataId: resource.resourceDataId,
+      resourceData: {
+        id: resourceData.id,
+        name: resourceData.name,
+        category: resourceData.category
+      },
       minimumLevel: levels.minimumLevel,
       criticalLevel: levels.criticalLevel,
       maximumLevel: levels.maximumLevel,
       unit: levels.unit
     };
-  });
+  }));
+  
+  return enrichedResources;
 };
 
 // Filter resources by category and apply standard levels
@@ -37,46 +41,65 @@ export const getResourcesByCategoryService = async (category) => {
     return 'INVALID_CATEGORY';
   }
 
+  // Obtener todos los ResourceData de la categoría
+  const resourceDataList = await ResourceData.findAll({
+    where: { category }
+  });
+  
+  const resourceDataIds = resourceDataList.map(rd => rd.id);
+  
+  // Obtener los recursos que corresponden a esos IDs
   const resources = await Resource.findAll({
-    include: [{
-      model: ResourceData,
-      as: 'resourceData',
-      where: { category },
-      attributes: ['id', 'name', 'category']
-    }]
+    where: {
+      resourceDataId: resourceDataIds
+    }
   });
 
-  // Aplicar niveles estándar basados en la categoría
+  // Aplicar niveles estándar
   const levels = getLevelsByCategory(category);
-  return resources.map(resource => ({
-    ...resource.toJSON(),
-    minimumLevel: levels.minimumLevel,
-    criticalLevel: levels.criticalLevel,
-    maximumLevel: levels.maximumLevel,
-    unit: levels.unit
+  const enrichedResources = await Promise.all(resources.map(async (resource) => {
+    const resourceData = resourceDataList.find(rd => rd.id === resource.resourceDataId);
+    
+    return {
+      id: resource.id,
+      quantity: resource.quantity,
+      resourceDataId: resource.resourceDataId,
+      resourceData: {
+        id: resourceData.id,
+        name: resourceData.name,
+        category: resourceData.category
+      },
+      minimumLevel: levels.minimumLevel,
+      criticalLevel: levels.criticalLevel,
+      maximumLevel: levels.maximumLevel,
+      unit: levels.unit
+    };
   }));
+  
+  return enrichedResources;
 };
 
 // Get single resource by ID with applied levels
 export const getResourceByIdService = async (id) => {
-  const resource = await Resource.findByPk(id, {
-    include: [{
-      model: ResourceData,
-      as: 'resourceData',
-      attributes: ['id', 'name', 'category']
-    }]
-  });
+  const resource = await Resource.findByPk(id);
 
   if (!resource) {
     return null;
   }
 
-  // Aplicar niveles estándar basados en la categoría
-  const category = resource.resourceData.category;
+  const resourceData = await ResourceData.findByPk(resource.resourceDataId);
+  const category = resourceData.category;
   const levels = getLevelsByCategory(category);
   
   return {
-    ...resource.toJSON(),
+    id: resource.id,
+    quantity: resource.quantity,
+    resourceDataId: resource.resourceDataId,
+    resourceData: {
+      id: resourceData.id,
+      name: resourceData.name,
+      category: resourceData.category
+    },
     minimumLevel: levels.minimumLevel,
     criticalLevel: levels.criticalLevel,
     maximumLevel: levels.maximumLevel,
@@ -95,12 +118,14 @@ export const updateResourceQuantityService = async (id, quantity) => {
     return 'RESOURCE_NOT_FOUND';
   }
 
-  const transaction = await db.sequelize.transaction();
+  const transaction = await sequelize.transaction();
   
   try {
     resource.quantity = quantity;
     await resource.save({ transaction });
 
+    // Importar ChangeHistory solo cuando se necesite
+    const ChangeHistory = (await import('../models/changeHistory.js')).default;
     await ChangeHistory.create({
       stock: quantity,
       resourceId: resource.resourceDataId
@@ -116,33 +141,43 @@ export const updateResourceQuantityService = async (id, quantity) => {
 
 // Get resources at or below critical levels (defined in constants)
 export const getCriticalResourcesService = async () => {
-  const allResources = await Resource.findAll({
-    include: [{
-      model: ResourceData,
-      as: 'resourceData',
-      attributes: ['id', 'name', 'category']
-    }]
+  const allResources = await Resource.findAll();
+  const allResourceData = await ResourceData.findAll();
+  
+  // Crear mapa de ResourceData por ID
+  const resourceDataMap = {};
+  allResourceData.forEach(rd => {
+    resourceDataMap[rd.id] = rd;
   });
 
-  // Filtrar recursos críticos basados en niveles estándar
-  const criticalResources = allResources.filter(resource => {
-    const category = resource.resourceData.category;
-    return isResourceCritical(resource.quantity, category);
-  });
-
-  // Aplicar niveles estándar a los recursos críticos
-  return criticalResources.map(resource => {
-    const category = resource.resourceData.category;
-    const levels = getLevelsByCategory(category);
+  // Filtrar y enriquecer recursos críticos
+  const criticalResources = [];
+  
+  for (const resource of allResources) {
+    const resourceData = resourceDataMap[resource.resourceDataId];
+    const category = resourceData.category;
     
-    return {
-      ...resource.toJSON(),
-      minimumLevel: levels.minimumLevel,
-      criticalLevel: levels.criticalLevel,
-      maximumLevel: levels.maximumLevel,
-      unit: levels.unit
-    };
-  });
+    if (isResourceCritical(resource.quantity, category)) {
+      const levels = getLevelsByCategory(category);
+      
+      criticalResources.push({
+        id: resource.id,
+        quantity: resource.quantity,
+        resourceDataId: resource.resourceDataId,
+        resourceData: {
+          id: resourceData.id,
+          name: resourceData.name,
+          category: resourceData.category
+        },
+        minimumLevel: levels.minimumLevel,
+        criticalLevel: levels.criticalLevel,
+        maximumLevel: levels.maximumLevel,
+        unit: levels.unit
+      });
+    }
+  }
+  
+  return criticalResources;
 };
 
 // Manually create history record (cron job creates them automatically every minute)

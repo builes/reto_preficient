@@ -76,11 +76,6 @@ Servidor disponible en: `http://localhost:3001`
 - `PUT /api/resources/:id/update-quantity` - Actualizar cantidad
 - `GET /api/resources/alerts` - Recursos críticos
 
-### Historial
-- `GET /api/resources/:resourceId/history` - Historial de un recurso
-- `GET /api/resources/history/recent?minutes=60` - Historial reciente
-- `GET /api/resources/:resourceId/stats` - Estadísticas (24h)
-
 ### Ejemplo de actualización
 ```bash
 curl -X PUT http://localhost:3001/api/resources/1/update-quantity \

@@ -6,11 +6,7 @@ import {
   getResourcesByCategoryService,
   getResourceByIdService,
   updateResourceQuantityService,
-  getCriticalResourcesService,
-  createChangeHistoryService,
-  getResourceHistoryService,
-  getRecentHistoryService,
-  getHistoryStatsService
+  getCriticalResourcesService
 } from '../services/resource.service.js';
 
 // GET /api/resources/ - List all resources with dynamic levels
@@ -101,87 +97,5 @@ export const getCriticalResourcesController = async (req, res) => {
     });
   } catch (e) {
     errorHandler(res, 'Error getting critical resources', e);
-  }
-};
-
-// POST /api/resources/change-history - Manually create history record
-export const createChangeHistoryController = async (req, res) => {
-  try {
-    const result = await createChangeHistoryService(req.body);
-    
-    if (result === 'RESOURCE_NOT_FOUND') {
-      return res.status(404).json({ message: 'Resource not found' });
-    }
-    if (result === 'INVALID_STOCK') {
-      return res.status(400).json({ message: 'Invalid stock value' });
-    }
-    if (result === 'RESOURCE_ID_REQUIRED') {
-      return res.status(400).json({ message: 'Resource ID is required' });
-    }
-    
-    return res.status(201).json({ 
-      message: 'Change history created successfully', 
-      changeHistory: result 
-    });
-  } catch (e) {
-    errorHandler(res, 'Error creating change history', e);
-  }
-};
-
-// GET /api/resources/:resourceId/history - Get resource history (newest to oldest)
-export const getResourceHistoryController = async (req, res) => {
-  try {
-    const { resourceId } = req.params;
-    const limit = req.query.limit ? parseInt(req.query.limit) : 100;
-    
-    const result = await getResourceHistoryService(Number(resourceId), limit);
-    
-    if (result === 'RESOURCE_NOT_FOUND') {
-      return res.status(404).json({ message: 'Resource not found' });
-    }
-    
-    return res.status(200).json({ 
-      message: 'Resource history retrieved successfully', 
-      history: result,
-      count: result.length
-    });
-  } catch (e) {
-    errorHandler(res, 'Error getting resource history', e);
-  }
-};
-
-// GET /api/resources/history/recent - Get recent history for all resources
-export const getRecentHistoryController = async (req, res) => {
-  try {
-    const minutes = req.query.minutes ? parseInt(req.query.minutes) : 60;
-    const result = await getRecentHistoryService(minutes);
-    
-    return res.status(200).json({ 
-      message: `History for the last ${minutes} minutes retrieved successfully`, 
-      history: result,
-      count: result.length,
-      timeRange: `${minutes} minutes`
-    });
-  } catch (e) {
-    errorHandler(res, 'Error getting recent history', e);
-  }
-};
-
-// GET /api/resources/:resourceId/stats - Get 24h statistics and trend analysis
-export const getHistoryStatsController = async (req, res) => {
-  try {
-    const { resourceId } = req.params;
-    const result = await getHistoryStatsService(Number(resourceId));
-    
-    if (result === 'RESOURCE_NOT_FOUND') {
-      return res.status(404).json({ message: 'Resource not found' });
-    }
-    
-    return res.status(200).json({ 
-      message: 'Resource statistics retrieved successfully', 
-      data: result
-    });
-  } catch (e) {
-    errorHandler(res, 'Error getting resource statistics', e);
   }
 };
