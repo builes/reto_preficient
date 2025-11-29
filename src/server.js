@@ -79,7 +79,7 @@ export class Server {
    * Configura eventos de WebSocket para tiempo real
    */
   sockets() {
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', async (socket) => {
       console.log('[WebSocket] Cliente conectado:', socket.id);
       
       // Enviar estado inicial al conectarse
@@ -87,6 +87,22 @@ export class Server {
         message: 'Conectado al sistema de monitoreo en tiempo real',
         timestamp: new Date().toISOString()
       });
+      
+      // Enviar datos iniciales de recursos al conectarse
+      try {
+        const { getAllResourcesService } = await import('./services/resource.service.js');
+        const resources = await getAllResourcesService();
+        
+        socket.emit('resources:initial', {
+          resources: resources,
+          count: resources.length,
+          timestamp: new Date().toISOString()
+        });
+        
+        console.log(`[WebSocket] Datos iniciales enviados a ${socket.id}: ${resources.length} recursos`);
+      } catch (error) {
+        console.error('[WebSocket] Error enviando datos iniciales:', error.message);
+      }
       
       socket.on('disconnect', () => {
         console.log('[WebSocket] Cliente desconectado:', socket.id);
