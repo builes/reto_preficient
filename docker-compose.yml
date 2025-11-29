@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+
+  # Node.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mars-resources-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment: 
+      DB_NAME: mars_resources
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_SSL: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mars-network
+    volumes:
+      - ./src:/app/src
+      - ./app.js:/app/app.js
+    command: sh -c "sleep 10 && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all && node app.js"
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  mars-network:
+    driver: bridge
