@@ -1,41 +1,81 @@
 import express from "express";
 import cors from "cors";
+import { sequelize } from './config/database.config.js';
 
-// Importar rutas
-import resourcesRoutes from "./routes/resources.routes.js";
+import { router as resourceRoutes } from "./routes/resource.routes.js";
+import { startResourceMonitoringCron, startHistoryCleanupCron } from './cron/resource.cron.js';
 
+/**
+ * Clase principal del servidor
+ * Configura Express, base de datos, middlewares, rutas y cron jobs
+ */
 export class Server {
   constructor() {
     this.app = express();
     this.port = process.env.PORT || 3000;
 
-    //Nombres de las rutas
+    // Definición de rutas base de la API
     this.paths = {
       resources: "/api/resources",
     };
 
-    // Middleware, son funciones que se ejecutan antes de llegar a un endpoint
+    // Inicializar componentes en orden
+    this.databaseInit();
     this.middlewares();
-
-    // Rutas de la aplicación
     this.routes();
-
-    // Iniciar el servidor
     this.listen();
   }
 
-  routes() {
-    this.app.use(this.paths.resources, resourcesRoutes);
+  /**
+   * Inicializa la conexión a la base de datos
+   * y arranca los cron jobs una vez conectado
+   */
+  async databaseInit() {
+    try {
+      await sequelize.authenticate();
+      console.log('[DB] Database connection successful');
+      
+      this.startCronJobs();
+    } catch (error) {
+      console.error('[DB] Error connecting to database', error);
+      throw error;
+    }
   }
 
-  middlewares() {
-    // CORS sirve para permitir el acceso a la API desde otros dominios
-    this.app.use(cors());
+  /**
+   * Inicia las tareas programadas (cron jobs)
+   * - Monitoreo cada minuto: registra estado de recursos
+   * - Limpieza diaria: elimina registros antiguos
+   */
+  startCronJobs() {
+    console.log('[CRON] Iniciando cron jobs...');
+    
+    startResourceMonitoringCron();
+    startHistoryCleanupCron();
+    
+    console.log('[CRON] Todos los cron jobs iniciados correctamente');
+  }
 
-    //Asi decimos que vamos a recibir datos en formato JSON cuando envian datos al servidor por el body
+  /**
+   * Registra las rutas de la aplicación
+   */
+  routes() {
+    this.app.use(this.paths.resources, resourceRoutes);
+  }
+
+  /**
+   * Configura middlewares de Express
+   * - CORS: permite peticiones desde cualquier origen
+   * - express.json(): parsea el body de las peticiones JSON
+   */
+  middlewares() {
+    this.app.use(cors());
     this.app.use(express.json());
   }
 
+  /**
+   * Inicia el servidor HTTP en el puerto configurado
+   */
   listen() {
     try {
       this.app.listen(this.port, () => {
