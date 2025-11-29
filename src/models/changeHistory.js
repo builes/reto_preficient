@@ -8,7 +8,7 @@ class ChangeHistory extends Model {
     // belongsTo relationship with ResourceData
     ChangeHistory.belongsTo(models.ResourceData, {
       foreignKey: 'resourceId',
-      as: 'resource'
+      as: 'resourceData'
     });
   }
 }

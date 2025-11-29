@@ -63,7 +63,7 @@ npm run db:verify
 npm run start
 ```
 
-Servidor disponible en: `http://localhost:3000`
+Servidor disponible en: `http://localhost:3001`
 
 ---
 
@@ -83,7 +83,7 @@ Servidor disponible en: `http://localhost:3000`
 
 ### Ejemplo de actualización
 ```bash
-curl -X PUT http://localhost:3000/api/resources/1/update-quantity \
+curl -X PUT http://localhost:3001/api/resources/1/update-quantity \
   -H "Content-Type: application/json" \
   -d '{"quantity": 20000}'
 ```
@@ -98,7 +98,7 @@ Los niveles se aplican automáticamente según la categoría:
 
 | Categoría | Min | Critical | Max | Unit |
 |-----------|-----|----------|-----|------|
-| Oxygen | 3000 | 5000 | 25000 | L |
+| Oxygen | 3001 | 5000 | 25000 | L |
 | Water | 50 | 80 | 500 | L |
 | Spare Parts | 10 | 20 | 100 | u |
 | Food | 5 | 10 | 70 | kg |
@@ -154,7 +154,7 @@ status - Estado general
    - Telegram Trigger (con el token del bot)
    - Code node para detectar intención
    - Switch para dirigir comandos
-   - HTTP Request nodes a `http://localhost:3000/api/resources/*`
+   - HTTP Request nodes a `http://localhost:3001/api/resources/*`
    - Code node para formatear respuesta
    - Telegram Send Message
 
@@ -231,7 +231,7 @@ src/
 - Token de Telegram correcto
 
 **N8N no conecta al backend:**
-- Si N8N está en Docker: usa `http://host.docker.internal:3000`
+- Si N8N está en Docker: usa `http://host.docker.internal:3001`
 - Si N8N está en la nube: usa ngrok para exponer localhost
 
 ---
