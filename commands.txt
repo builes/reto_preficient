@@ -1,0 +1,8 @@
+//Crear proyecto react vite
+npm create vite@latest nombre-de-tu-proyecto
+
+
+//Crear proyecto node con express
+npm init -y
+npm install express
+npm install nodemon -D
