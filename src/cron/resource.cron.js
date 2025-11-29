@@ -8,8 +8,9 @@ import ChangeHistory from '../models/changeHistory.js';
  * Cron job que registra el estado actual de todos los recursos cada minuto
  * Esto permite tener un historial temporal para gráficas y análisis de tendencias
  * Se ejecuta: Cada minuto (* * * * *)
+ * @param {Object} io - Instancia de Socket.IO para emitir eventos en tiempo real
  */
-export const startResourceMonitoringCron = () => {
+export const startResourceMonitoringCron = (io) => {
   cron.schedule('* * * * *', async () => {
     try {
       // Obtener todos los recursos sin includes
@@ -31,7 +32,7 @@ export const startResourceMonitoringCron = () => {
       console.log(`[CRON] ${resources.length} registros creados - ${timestamp.toLocaleString('es-MX')}`);
       
       // Emitir evento WebSocket a todos los clientes conectados
-      if (global.io) {
+      if (io) {
         // Obtener ResourceData para cada recurso
         const enrichedData = await Promise.all(resources.map(async (resource) => {
           const resourceData = await ResourceData.findByPk(resource.resourceDataId);
@@ -44,7 +45,7 @@ export const startResourceMonitoringCron = () => {
           };
         }));
         
-        global.io.emit('resources:updated', {
+        io.emit('connection', {
           resources: enrichedData,
           count: enrichedData.length,
           timestamp: timestamp.toISOString()

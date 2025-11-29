@@ -69,7 +69,7 @@ export class Server {
   startCronJobs() {
     console.log('[CRON] Iniciando cron jobs...');
     
-    startResourceMonitoringCron();
+    startResourceMonitoringCron(this.io);
     startHistoryCleanupCron();
     
     console.log('[CRON] Todos los cron jobs iniciados correctamente');
