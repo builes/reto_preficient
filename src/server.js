@@ -37,8 +37,15 @@ export class Server {
   }
 
   listen() {
-    this.app.listen(this.port, () => {
-      console.log(`Server is running on port ${this.port}`);
-    });
+    try {
+      this.app.listen(this.port, () => {
+        console.log(`Server is running on port ${this.port}`);
+      });
+    } catch (error) {
+      console.error(`[Server] Error starting server`, error);
+      throw error;
+    }
   }
 }
+
+
