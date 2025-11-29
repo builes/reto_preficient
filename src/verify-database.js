@@ -17,7 +17,7 @@ async function verifyDatabase() {
     
     console.log('\n--- RESOURCES ---');
     console.log(`Total records: ${resources.length}`);
-    resources.forEach(r => console.log(`  - ID ${r.id}: ${r.quantity}${r.unit} (critical: ${r.criticalLevel}, max: ${r.maximumLevel})`));
+    resources.forEach(r => console.log(`  - ID ${r.id}: Quantity ${r.quantity}`));
     
     console.log('\n--- CHANGE HISTORY ---');
     console.log(`Total records: ${changeHistory.length}`);
